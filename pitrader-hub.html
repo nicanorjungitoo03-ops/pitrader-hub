@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PiTrader Hub</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --pi-purple: #6B3FA0;
+    --pi-gold: #F0A500;
+    --pi-deep: #0D0A1A;
+    --pi-card: #13102A;
+    --pi-border: #2A2250;
+    --pi-text: #E8E2F8;
+    --pi-muted: #7A6EA8;
+    --green: #00D4A0;
+    --red: #FF4D6D;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--pi-deep);
+    color: var(--pi-text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(107,63,160,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(107,63,160,0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 0 80px; }
+
+  /* Header */
+  header {
+    padding: 20px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--pi-purple), var(--pi-gold));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700;
+    font-family: var(--mono);
+    color: white;
+  }
+
+  .logo-text { font-size: 18px; font-weight: 700; }
+  .logo-text span { color: var(--pi-gold); }
+
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,212,160,0.1);
+    border: 1px solid rgba(0,212,160,0.3);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--green);
+  }
+
+  .pulse {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* Hero price card */
+  .price-hero {
+    margin: 20px 16px 0;
+    background: linear-gradient(135deg, #1a1035 0%, #0f0c24 100%);
+    border: 1px solid var(--pi-border);
+    border-radius: 20px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .price-hero::before {
+    content: 'π';
+    position: absolute;
+    right: -10px; top: -20px;
+    font-size: 140px;
+    font-weight: 700;
+    color: rgba(107,63,160,0.08);
+    font-family: var(--mono);
+    pointer-events: none;
+  }
+
+  .price-label { font-size: 12px; color: var(--pi-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+
+  .price-main {
+    display: flex; align-items: flex-end; gap: 12px; margin-bottom: 6px;
+  }
+
+  .price-value {
+    font-family: var(--mono);
+    font-size: 42px;
+    font-weight: 600;
+    color: white;
+    line-height: 1;
+  }
+
+  .price-change {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+  }
+
+  .price-change.up { background: rgba(0,212,160,0.15); color: var(--green); }
+  .price-change.down { background: rgba(255,77,109,0.15); color: var(--red); }
+
+  .price-meta {
+    display: flex; gap: 20px; margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--pi-border);
+  }
+
+  .meta-item { flex: 1; }
+  .meta-label { font-size: 10px; color: var(--pi-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .meta-value { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+
+  /* Signal Card */
+  .signal-card {
+    margin: 12px 16px 0;
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .signal-card:active { transform: scale(0.98); }
+
+  .signal-card.hold {
+    background: linear-gradient(135deg, rgba(240,165,0,0.15), rgba(240,165,0,0.05));
+    border: 1px solid rgba(240,165,0,0.3);
+  }
+
+  .signal-card.buy {
+    background: linear-gradient(135deg, rgba(0,212,160,0.15), rgba(0,212,160,0.05));
+    border: 1px solid rgba(0,212,160,0.3);
+  }
+
+  .signal-card.sell {
+    background: linear-gradient(135deg, rgba(255,77,109,0.15), rgba(255,77,109,0.05));
+    border: 1px solid rgba(255,77,109,0.3);
+  }
+
+  .signal-emoji { font-size: 32px; }
+
+  .signal-content { flex: 1; }
+  .signal-title { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
+  .signal-card.hold .signal-title { color: var(--pi-gold); }
+  .signal-card.buy .signal-title { color: var(--green); }
+  .signal-card.sell .signal-title { color: var(--red); }
+  .signal-desc { font-size: 13px; color: var(--pi-muted); line-height: 1.4; }
+
+  .signal-strength {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+
+  .strength-bars {
+    display: flex; gap: 3px; align-items: flex-end;
+  }
+
+  .bar {
+    width: 5px; border-radius: 2px;
+    background: var(--pi-border);
+    transition: background 0.3s;
+  }
+
+  .bar.active.hold { background: var(--pi-gold); }
+  .bar.active.buy { background: var(--green); }
+  .bar.active.sell { background: var(--red); }
+
+  .strength-label { font-size: 10px; color: var(--pi-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Section header */
+  .section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 24px 20px 10px;
+  }
+
+  .section-title { font-size: 16px; font-weight: 600; }
+  .section-link { font-size: 12px; color: var(--pi-purple); cursor: pointer; }
+
+  /* Mini chart */
+  .chart-card {
+    margin: 0 16px;
+    background: var(--pi-card);
+    border: 1px solid var(--pi-border);
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .chart-tabs {
+    display: flex; gap: 6px; margin-bottom: 16px;
+  }
+
+  .chart-tab {
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    cursor: pointer;
+    border: 1px solid var(--pi-border);
+    color: var(--pi-muted);
+    background: transparent;
+    transition: all 0.2s;
+  }
+
+  .chart-tab.active {
+    background: var(--pi-purple);
+    border-color: var(--pi-purple);
+    color: white;
+  }
+
+  svg.sparkline { width: 100%; height: 80px; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 12px 16px 0;
+  }
+
+  .stat-card {
+    background: var(--pi-card);
+    border: 1px solid var(--pi-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+
+  .stat-icon { font-size: 20px; margin-bottom: 8px; }
+  .stat-label { font-size: 11px; color: var(--pi-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .stat-val { font-family: var(--mono); font-size: 16px; font-weight: 600; }
+  .stat-sub { font-size: 11px; color: var(--pi-muted); margin-top: 2px; }
+
+  /* Exchange cards */
+  .exchange-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  .exchange-card {
+    background: var(--pi-card);
+    border: 1px solid var(--pi-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s;
+  }
+
+  .exchange-card:hover { border-color: var(--pi-purple); }
+
+  .exchange-logo {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+
+  .exchange-info { flex: 1; }
+  .exchange-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .exchange-pair { font-size: 12px; color: var(--pi-muted); font-family: var(--mono); }
+
+  .exchange-price-col { text-align: right; }
+  .exchange-price { font-family: var(--mono); font-size: 14px; font-weight: 600; }
+  .exchange-vol { font-size: 11px; color: var(--pi-muted); margin-top: 2px; }
+
+  .arrow-icon { color: var(--pi-muted); font-size: 16px; }
+
+  /* Tips section */
+  .tips-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  .tip-card {
+    background: var(--pi-card);
+    border: 1px solid var(--pi-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    cursor: pointer;
+  }
+
+  .tip-number {
+    width: 28px; height: 28px;
+    background: rgba(107,63,160,0.2);
+    border: 1px solid var(--pi-purple);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--pi-purple);
+    flex-shrink: 0;
+  }
+
+  .tip-text { font-size: 13px; color: var(--pi-text); line-height: 1.5; }
+  .tip-text strong { color: var(--pi-gold); }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    background: rgba(13,10,26,0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--pi-border);
+    display: flex;
+    padding: 8px 0 12px;
+    z-index: 100;
+  }
+
+  .nav-item {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer;
+    padding: 4px 0;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+
+  .nav-item.active { opacity: 1; }
+  .nav-icon { font-size: 20px; }
+  .nav-label { font-size: 10px; font-family: var(--mono); color: var(--pi-muted); }
+  .nav-item.active .nav-label { color: var(--pi-gold); }
+
+  /* Loading shimmer */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .loading-price {
+    background: linear-gradient(90deg, var(--pi-border) 25%, rgba(107,63,160,0.3) 50%, var(--pi-border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+    height: 42px; width: 140px;
+    display: inline-block;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--pi-card);
+    border: 1px solid var(--pi-border);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%; max-width: 480px;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--pi-border);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+
+  .modal-body { font-size: 14px; color: var(--pi-muted); line-height: 1.7; }
+  .modal-body p { margin-bottom: 12px; }
+  .modal-body strong { color: var(--pi-text); }
+
+  .modal-close {
+    margin-top: 20px;
+    width: 100%;
+    padding: 14px;
+    background: var(--pi-purple);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--sans);
+    cursor: pointer;
+  }
+
+  .disclaimer {
+    margin: 16px 16px 0;
+    padding: 12px 14px;
+    background: rgba(240,165,0,0.05);
+    border: 1px solid rgba(240,165,0,0.15);
+    border-radius: 10px;
+    font-size: 11px;
+    color: var(--pi-muted);
+    line-height: 1.5;
+  }
+
+  .disclaimer span { color: var(--pi-gold); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">π</div>
+      <div class="logo-text">Pi<span>Trader</span> Hub</div>
+    </div>
+    <div class="live-badge">
+      <div class="pulse"></div>
+      LIVE
+    </div>
+  </header>
+
+  <!-- Hero Price -->
+  <div class="price-hero">
+    <div class="price-label">PI / USD · CoinGecko</div>
+    <div class="price-main">
+      <div class="price-value" id="piPrice"><span class="loading-price"></span></div>
+      <div class="price-change" id="priceChange">...</div>
+    </div>
+    <div class="price-meta">
+      <div class="meta-item">
+        <div class="meta-label">24h High</div>
+        <div class="meta-value" id="high24">—</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">24h Low</div>
+        <div class="meta-value" id="low24">—</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Mkt Cap</div>
+        <div class="meta-value" id="mktCap">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signal -->
+  <div class="section-header">
+    <div class="section-title">Today's Signal</div>
+    <div class="section-link" onclick="openModal('signalInfo')">What's this? →</div>
+  </div>
+
+  <div class="signal-card hold" id="signalCard" onclick="openModal('signalInfo')">
+    <div class="signal-emoji" id="signalEmoji">⏳</div>
+    <div class="signal-content">
+      <div class="signal-title" id="signalTitle">Loading...</div>
+      <div class="signal-desc" id="signalDesc">Fetching live market data...</div>
+    </div>
+    <div class="signal-strength">
+      <div class="strength-bars" id="strengthBars">
+        <div class="bar" style="height:8px"></div>
+        <div class="bar" style="height:14px"></div>
+        <div class="bar" style="height:20px"></div>
+        <div class="bar" style="height:14px"></div>
+        <div class="bar" style="height:8px"></div>
+      </div>
+      <div class="strength-label" id="strengthLabel">—</div>
+    </div>
+  </div>
+
+  <!-- Mini Chart -->
+  <div class="section-header">
+    <div class="section-title">7-Day Price</div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-tabs">
+      <button class="chart-tab active" onclick="switchTab(this,'7d')">7D</button>
+      <button class="chart-tab" onclick="switchTab(this,'14d')">14D</button>
+      <button class="chart-tab" onclick="switchTab(this,'30d')">30D</button>
+    </div>
+    <svg class="sparkline" id="sparkline" viewBox="0 0 400 80" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#6B3FA0" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#6B3FA0" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <text x="200" y="44" text-anchor="middle" fill="#7A6EA8" font-size="12" font-family="Space Grotesk">Loading chart...</text>
+    </svg>
+    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--pi-muted); font-family:var(--mono); margin-top:4px;" id="chartDates"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="section-header">
+    <div class="section-title">Market Stats</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">🌍</div>
+      <div class="stat-label">Pioneers</div>
+      <div class="stat-val">60M+</div>
+      <div class="stat-sub">Worldwide users</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-label">KYC Verified</div>
+      <div class="stat-val">17.7M</div>
+      <div class="stat-sub">Mainnet active</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-label">24h Volume</div>
+      <div class="stat-val" id="volume24">—</div>
+      <div class="stat-sub">USD traded</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🏦</div>
+      <div class="stat-label">Rank</div>
+      <div class="stat-val" id="rankVal">#—</div>
+      <div class="stat-sub">CoinGecko</div>
+    </div>
+  </div>
+
+  <!-- Exchanges -->
+  <div class="section-header">
+    <div class="section-title">Where to Trade PI</div>
+    <div class="section-link">Tap to open →</div>
+  </div>
+  <div class="exchange-list">
+    <a class="exchange-card" href="https://www.gate.io/trade/PI_USDT" target="_blank">
+      <div class="exchange-logo" style="background:linear-gradient(135deg,#f60,#f90);color:white;">GT</div>
+      <div class="exchange-info">
+        <div class="exchange-name">Gate.io</div>
+        <div class="exchange-pair">PI / USDT · Spot</div>
+      </div>
+      <div class="exchange-price-col">
+        <div class="exchange-price" id="gatePrice">—</div>
+        <div class="exchange-vol">Highest vol.</div>
+      </div>
+      <div class="arrow-icon">›</div>
+    </a>
+    <a class="exchange-card" href="https://www.okx.com/trade-spot/pi-usdt" target="_blank">
+      <div class="exchange-logo" style="background:linear-gradient(135deg,#333,#555);color:white;">OKX</div>
+      <div class="exchange-info">
+        <div class="exchange-name">OKX</div>
+        <div class="exchange-pair">PI / USDT · Spot</div>
+      </div>
+      <div class="exchange-price-col">
+        <div class="exchange-price" id="okxPrice">—</div>
+        <div class="exchange-vol">Top exchange</div>
+      </div>
+      <div class="arrow-icon">›</div>
+    </a>
+    <a class="exchange-card" href="https://www.mexc.com/exchange/PI_USDT" target="_blank">
+      <div class="exchange-logo" style="background:linear-gradient(135deg,#1BA9FF,#0070CC);color:white;">MX</div>
+      <div class="exchange-info">
+        <div class="exchange-name">MEXC</div>
+        <div class="exchange-pair">PI / USDT · Spot</div>
+      </div>
+      <div class="exchange-price-col">
+        <div class="exchange-price" id="mexcPrice">—</div>
+        <div class="exchange-vol">Popular choice</div>
+      </div>
+      <div class="arrow-icon">›</div>
+    </a>
+  </div>
+
+  <!-- Tips -->
+  <div class="section-header">
+    <div class="section-title">Pioneer Trading Tips</div>
+  </div>
+  <div class="tips-list">
+    <div class="tip-card" onclick="openModal('tip1')">
+      <div class="tip-number">01</div>
+      <div class="tip-text"><strong>Never trade all your PI at once.</strong> Split into portions — trade a small % and hold the rest long-term.</div>
+    </div>
+    <div class="tip-card" onclick="openModal('tip2')">
+      <div class="tip-number">02</div>
+      <div class="tip-text"><strong>Watch volume, not just price.</strong> A price move with low volume is often a fake-out.</div>
+    </div>
+    <div class="tip-card" onclick="openModal('tip3')">
+      <div class="tip-number">03</div>
+      <div class="tip-text"><strong>Pi's Open Mainnet is still developing.</strong> This means more upside risk AND downside risk than mature coins.</div>
+    </div>
+    <div class="tip-card" onclick="openModal('tip4')">
+      <div class="tip-number">04</div>
+      <div class="tip-text"><strong>Use limit orders, not market orders.</strong> You get the price you want, not the price you get.</div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <span>⚠️ Disclaimer:</span> PiTrader Hub is for information only. This is not financial advice. Crypto trading involves risk — only trade what you can afford to lose.
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active">
+    <div class="nav-icon">📈</div>
+    <div class="nav-label">Market</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">⚡</div>
+    <div class="nav-label">Signals</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">🏦</div>
+    <div class="nav-label">Exchanges</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">📚</div>
+    <div class="nav-label">Learn</div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modal-signalInfo" onclick="closeModal('signalInfo')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="signalModalTitle">Today's Signal</div>
+    <div class="modal-body" id="signalModalBody"></div>
+    <button class="modal-close" onclick="closeModal('signalInfo')">Got it</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-tip1" onclick="closeModal('tip1')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Position Sizing</div>
+    <div class="modal-body">
+      <p><strong>Never put all your eggs in one basket.</strong></p>
+      <p>A simple rule: keep 70% of your PI as a long-term hold. Only trade the remaining 30%, and even then in smaller chunks.</p>
+      <p>This protects you if the market drops suddenly — you'll still have your core stack.</p>
+    </div>
+    <button class="modal-close" onclick="closeModal('tip1')">Got it</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-tip2" onclick="closeModal('tip2')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Volume Matters</div>
+    <div class="modal-body">
+      <p><strong>Price moves on low volume are unreliable.</strong></p>
+      <p>If PI goes up 20% but volume is very low, it could easily reverse. A strong move needs strong volume behind it to be sustainable.</p>
+      <p>Always check the 24h volume before making a trade decision.</p>
+    </div>
+    <button class="modal-close" onclick="closeModal('tip2')">Got it</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-tip3" onclick="closeModal('tip3')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Pi Is Still Early</div>
+    <div class="modal-body">
+      <p><strong>Pi Network is actively developing its Open Mainnet.</strong></p>
+      <p>Smart contracts went live in early 2026 (v23 upgrade). This is exciting for long-term value, but also means the ecosystem is still maturing.</p>
+      <p>Early stage = higher potential rewards AND higher risk. Be patient and don't over-invest.</p>
+    </div>
+    <button class="modal-close" onclick="closeModal('tip3')">Got it</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-tip4" onclick="closeModal('tip4')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Limit vs Market Orders</div>
+    <div class="modal-body">
+      <p><strong>Market order:</strong> Buy/sell immediately at whatever price is available. Fast, but you might get a bad price.</p>
+      <p><strong>Limit order:</strong> You set the price you want. The trade only happens if PI reaches that price. Slower, but you stay in control.</p>
+      <p>For most Pioneers, limit orders are the safer choice.</p>
+    </div>
+    <button class="modal-close" onclick="closeModal('tip4')">Got it</button>
+  </div>
+</div>
+
+<script>
+// ─── Fetch live PI price from CoinGecko ───
+async function fetchPiData(days = 7) {
+  try {
+    const [priceRes, chartRes] = await Promise.all([
+      fetch('https://api.coingecko.com/api/v3/coins/pi-network?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false'),
+      fetch(`https://api.coingecko.com/api/v3/coins/pi-network/market_chart?vs_currency=usd&days=${days}`)
+    ]);
+
+    const priceData = await priceRes.json();
+    const chartData = await chartRes.json();
+
+    const price = priceData.market_data.current_price.usd;
+    const change24 = priceData.market_data.price_change_percentage_24h;
+    const high24 = priceData.market_data.high_24h.usd;
+    const low24 = priceData.market_data.low_24h.usd;
+    const mktCap = priceData.market_data.market_cap.usd;
+    const vol24 = priceData.market_data.total_volume.usd;
+    const rank = priceData.market_cap_rank;
+
+    // Update price display
+    document.getElementById('piPrice').textContent = '$' + price.toFixed(4);
+    const changeEl = document.getElementById('priceChange');
+    changeEl.textContent = (change24 >= 0 ? '+' : '') + change24.toFixed(2) + '%';
+    changeEl.className = 'price-change ' + (change24 >= 0 ? 'up' : 'down');
+
+    document.getElementById('high24').textContent = '$' + high24.toFixed(4);
+    document.getElementById('low24').textContent = '$' + low24.toFixed(4);
+    document.getElementById('mktCap').textContent = '$' + formatNum(mktCap);
+    document.getElementById('volume24').textContent = '$' + formatNum(vol24);
+    document.getElementById('rankVal').textContent = '#' + rank;
+
+    // Price on exchanges (same price, real exchanges display their own)
+    document.getElementById('gatePrice').textContent = '$' + price.toFixed(4);
+    document.getElementById('okxPrice').textContent = '$' + price.toFixed(4);
+    document.getElementById('mexcPrice').textContent = '$' + price.toFixed(4);
+
+    // Update signal
+    updateSignal(change24, vol24, price);
+
+    // Draw chart
+    if (chartData.prices && chartData.prices.length > 0) {
+      drawSparkline(chartData.prices, days);
+    }
+
+  } catch (err) {
+    document.getElementById('piPrice').textContent = 'N/A';
+    document.getElementById('priceChange').textContent = 'Offline';
+    document.getElementById('priceChange').className = 'price-change down';
+  }
+}
+
+function formatNum(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toFixed(0);
+}
+
+function updateSignal(change24, vol, price) {
+  const card = document.getElementById('signalCard');
+  const emoji = document.getElementById('signalEmoji');
+  const title = document.getElementById('signalTitle');
+  const desc = document.getElementById('signalDesc');
+  const label = document.getElementById('strengthLabel');
+  const bars = document.getElementById('strengthBars').querySelectorAll('.bar');
+
+  let signal, info, strength;
+
+  if (change24 > 8) {
+    signal = 'buy'; emoji.textContent = '🚀'; title.textContent = 'Strong Uptrend';
+    desc.textContent = `PI is up ${change24.toFixed(1)}% in 24h — strong momentum. Could continue.`;
+    strength = 5; info = { title: '🚀 Strong Uptrend', body: `PI has moved up ${change24.toFixed(1)}% today with strong momentum. This can signal continued buying pressure, but be cautious of over-buying at peaks. Consider buying in stages, not all at once.` };
+  } else if (change24 > 3) {
+    signal = 'buy'; emoji.textContent = '📈'; title.textContent = 'Mild Uptrend';
+    desc.textContent = `PI is up ${change24.toFixed(1)}% today — moderate positive momentum.`;
+    strength = 3; info = { title: '📈 Mild Uptrend', body: `A modest ${change24.toFixed(1)}% gain today. Market is cautiously positive. Good for watching closely, but not necessarily a strong buy signal on its own. Wait for confirmation with volume.` };
+  } else if (change24 < -8) {
+    signal = 'sell'; emoji.textContent = '📉'; title.textContent = 'Sharp Drop';
+    desc.textContent = `PI is down ${Math.abs(change24).toFixed(1)}% — strong selling pressure today.`;
+    strength = 5; info = { title: '📉 Sharp Drop', body: `PI is down ${Math.abs(change24).toFixed(1)}% in 24h. This is significant selling pressure. Some see this as a buying opportunity (dip buying), others as a warning sign. Your decision should depend on your risk tolerance and long-term view.` };
+  } else if (change24 < -3) {
+    signal = 'sell'; emoji.textContent = '⬇️'; title.textContent = 'Mild Dip';
+    desc.textContent = `PI is down ${Math.abs(change24).toFixed(1)}% — some selling pressure, but manageable.`;
+    strength = 3; info = { title: '⬇️ Mild Dip', body: `A ${Math.abs(change24).toFixed(1)}% dip is moderate. This could be a small correction after a rise, or the start of a trend down. Watch for the next few hours before making any moves.` };
+  } else {
+    signal = 'hold'; emoji.textContent = '⚖️'; title.textContent = 'Sideways — Hold';
+    desc.textContent = `PI is ${change24 >= 0 ? '+' : ''}${change24.toFixed(1)}% today — consolidating. Patience is key.`;
+    strength = 2; info = { title: '⚖️ Sideways Market', body: `PI is in consolidation — change is less than 3% either way. This is the most common state. The best move is usually to hold and wait for a clear direction. Avoid making emotional trades during sideways markets.` };
+  }
+
+  card.className = 'signal-card ' + signal;
+  label.textContent = strength >= 4 ? 'STRONG' : strength >= 3 ? 'MODERATE' : 'WEAK';
+
+  const heights = [8, 14, 20, 14, 8];
+  bars.forEach((b, i) => {
+    b.className = 'bar' + (i < strength ? ' active ' + signal : '');
+    b.style.height = heights[i] + 'px';
+  });
+
+  // Store for modal
+  window.currentSignalInfo = info;
+}
+
+function drawSparkline(prices, days) {
+  const vals = prices.map(p => p[1]);
+  const times = prices.map(p => p[0]);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const range = max - min || 0.0001;
+  const w = 400, h = 80, pad = 4;
+
+  const pts = vals.map((v, i) => {
+    const x = (i / (vals.length - 1)) * (w - pad*2) + pad;
+    const y = h - pad - ((v - min) / range) * (h - pad*2);
+    return `${x},${y}`;
+  });
+
+  const isUp = vals[vals.length-1] >= vals[0];
+  const lineColor = isUp ? '#00D4A0' : '#FF4D6D';
+  const gradStop = isUp ? 'rgba(0,212,160,0.3)' : 'rgba(255,77,109,0.3)';
+
+  const areaPath = `M${pts[0]} L${pts.join(' L')} L${400-pad},${h} L${pad},${h} Z`;
+  const linePath = `M${pts.join(' L')}`;
+
+  const svg = document.getElementById('sparkline');
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#lineGrad)"/>
+    <path d="${linePath}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  `;
+
+  // Date labels
+  const dateEl = document.getElementById('chartDates');
+  const start = new Date(times[0]);
+  const end = new Date(times[times.length-1]);
+  const mid = new Date((times[0] + times[times.length-1]) / 2);
+  const fmt = d => d.toLocaleDateString('en', {month:'short', day:'numeric'});
+  dateEl.innerHTML = `<span>${fmt(start)}</span><span>${fmt(mid)}</span><span>${fmt(end)}</span>`;
+}
+
+// Tab switching
+let currentDays = 7;
+function switchTab(el, period) {
+  document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const days = period === '7d' ? 7 : period === '14d' ? 14 : 30;
+  currentDays = days;
+  fetch(`https://api.coingecko.com/api/v3/coins/pi-network/market_chart?vs_currency=usd&days=${days}`)
+    .then(r => r.json())
+    .then(d => { if (d.prices) drawSparkline(d.prices, days); });
+}
+
+// Modals
+function openModal(id) {
+  if (id === 'signalInfo' && window.currentSignalInfo) {
+    document.getElementById('signalModalTitle').textContent = window.currentSignalInfo.title;
+    document.getElementById('signalModalBody').innerHTML = `<p>${window.currentSignalInfo.body}</p><p><strong>Remember:</strong> This is a simple signal based on 24h price change only. Always do your own research and never invest more than you can afford to lose.</p>`;
+  }
+  document.getElementById('modal-' + id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById('modal-' + id).classList.remove('open');
+}
+
+// Bottom nav clicks
+document.querySelectorAll('.nav-item').forEach((item, i) => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+  });
+});
+
+// Init
+fetchPiData(7);
+// Refresh every 3 minutes
+setInterval(() => fetchPiData(currentDays), 180000);
+</script>
+</body>
+</html>
